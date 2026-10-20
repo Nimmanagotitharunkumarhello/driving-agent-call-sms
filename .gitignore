@@ -1,0 +1,32 @@
+# Environment Variables & Secrets
+.env
+*.env
+backend/.env
+local.properties
+
+# Python
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.log
+
+# Android & Gradle
+.gradle/
+.kotlin/
+build/
+app/build/
+*.apk
+*.aab
+
+# IDE & OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Large / Temporary Binaries
+WisprFlowInstaller.exe
