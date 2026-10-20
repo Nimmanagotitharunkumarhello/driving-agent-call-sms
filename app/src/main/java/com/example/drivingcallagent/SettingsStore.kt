@@ -40,11 +40,18 @@ class SettingsStore(context: Context) {
 
     /**
      * Whether Driving Mode is turned ON.
-     * When true, incoming calls will be auto-answered.
      */
     var isDrivingModeEnabled: Boolean
         get() = prefs.getBoolean(KEY_DRIVING_MODE, false)
         set(value) = prefs.edit().putBoolean(KEY_DRIVING_MODE, value).apply()
+
+    /**
+     * Whether to auto-answer calls locally onto the loudspeaker.
+     * Default is false (auto-declines and dispatches 1-Tap Voice Bridge SMS so caller hears real AI).
+     */
+    var isAutoAnswerEnabled: Boolean
+        get() = prefs.getBoolean("is_auto_answer_enabled", false)
+        set(value) = prefs.edit().putBoolean("is_auto_answer_enabled", value).apply()
 
     /**
      * Telegram Bot API token obtained from @BotFather.

@@ -65,16 +65,27 @@ class CallEventReceiver : BroadcastReceiver() {
                 settings.handledThisCall = true
 
 
-                Log.d(TAG, "Auto-answering incoming call in 2 seconds...")
-
-                val pendingResult = goAsync()
-                Handler(Looper.getMainLooper()).postDelayed({
-                    try {
-                        answerCall(context)
-                    } finally {
-                        pendingResult.finish()
-                    }
-                }, 2000L)
+                if (settings.isAutoAnswerEnabled) {
+                    Log.d(TAG, "Auto-answering incoming call in 2 seconds...")
+                    val pendingResult = goAsync()
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        try {
+                            answerCall(context)
+                        } finally {
+                            pendingResult.finish()
+                        }
+                    }, 2000L)
+                } else {
+                    Log.d(TAG, "Auto-declining incoming call in 1.5s to trigger Voice Bridge & SMS...")
+                    val pendingResult = goAsync()
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        try {
+                            declineCall(context)
+                        } finally {
+                            pendingResult.finish()
+                        }
+                    }, 1500L)
+                }
             }
 
             // =================================================================
@@ -131,6 +142,9 @@ class CallEventReceiver : BroadcastReceiver() {
             // =================================================================
             TelephonyManager.EXTRA_STATE_IDLE -> {
                 Log.d(TAG, "Phone is IDLE.")
+
+                // Immediately stop TTS to prevent lingering audio after call is finished
+                CallAudioSpeaker.stop(context)
 
                 // If the agent didn't speak (call was missed, rejected, or unanswered)
                 if (settings.isDrivingModeEnabled && !settings.spokeThisCall && settings.lastCaller.isNotBlank()) {
@@ -214,6 +228,26 @@ class CallEventReceiver : BroadcastReceiver() {
                 Log.i(TAG, "acceptRingingCall() invoked successfully.")
             } catch (e: Exception) {
                 Log.e(TAG, "Exception in acceptRingingCall()", e)
+            }
+        }
+    }
+
+    /**
+     * Declines / rejects the incoming call using TelecomManager.
+     */
+    private fun declineCall(context: Context) {
+        val telecomManager = context.getSystemService(Context.TELECOM_SERVICE) as? TelecomManager ?: return
+        val hasPermission = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ANSWER_PHONE_CALLS
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (hasPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            try {
+                telecomManager.endCall()
+                Log.i(TAG, "declineCall() executed successfully.")
+            } catch (e: Exception) {
+                Log.e(TAG, "Exception in declineCall()", e)
             }
         }
     }

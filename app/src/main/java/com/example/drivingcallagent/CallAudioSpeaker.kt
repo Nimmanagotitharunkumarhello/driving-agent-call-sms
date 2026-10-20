@@ -32,6 +32,44 @@ object CallAudioSpeaker {
     const val DRIVING_MESSAGE =
         "Hi! I am Java, an AI agent for Tharun. Sir cannot attend the call right now because he is driving. When he finishes driving and parks safely, he will call you back. If you have any urgent queries or messages, please send a message right now and I will notify sir immediately. Thank you!"
 
+    private var activeTts: TextToSpeech? = null
+    private var activeHandler: Handler? = null
+    private var activeRunnable: Runnable? = null
+    private var activeAudioManager: AudioManager? = null
+    private var originalMode: Int = AudioManager.MODE_NORMAL
+    private var wasSpeakerOn: Boolean = false
+
+    /**
+     * Immediately stops TTS playback and restores audio settings.
+     */
+    fun stop(context: Context? = null) {
+        Log.i(TAG, "Stopping CallAudioSpeaker immediately.")
+        try {
+            activeRunnable?.let { activeHandler?.removeCallbacks(it) }
+            activeRunnable = null
+            activeTts?.stop()
+            activeTts?.shutdown()
+            activeTts = null
+        } catch (e: Exception) {
+            Log.e(TAG, "Error stopping TTS", e)
+        }
+
+        try {
+            activeAudioManager?.let { am ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    am.clearCommunicationDevice()
+                } else {
+                    @Suppress("DEPRECATION")
+                    am.isSpeakerphoneOn = wasSpeakerOn
+                }
+                am.mode = originalMode
+            }
+            activeAudioManager = null
+        } catch (e: Exception) {
+            Log.e(TAG, "Error restoring audio settings in stop()", e)
+        }
+    }
+
     /**
      * Speaks the driving message to the caller and hangs up when finished.
      */
@@ -43,13 +81,14 @@ object CallAudioSpeaker {
         val audioManager = appContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         val settings = SettingsStore(appContext)
 
-        // Save original audio settings to restore later
-        val originalMode = audioManager.mode
-        val wasSpeakerphoneOn = audioManager.isSpeakerphoneOn
+        activeAudioManager = audioManager
+        originalMode = audioManager.mode
+        wasSpeakerOn = audioManager.isSpeakerphoneOn
         val originalCallVolume = audioManager.getStreamVolume(AudioManager.STREAM_VOICE_CALL)
 
         val hasFinished = AtomicBoolean(false)
         val mainHandler = Handler(Looper.getMainLooper())
+        activeHandler = mainHandler
 
         var tts: TextToSpeech? = null
 
@@ -75,7 +114,7 @@ object CallAudioSpeaker {
                     audioManager.clearCommunicationDevice()
                 } else {
                     @Suppress("DEPRECATION")
-                    audioManager.isSpeakerphoneOn = wasSpeakerphoneOn
+                    audioManager.isSpeakerphoneOn = wasSpeakerOn
                 }
                 audioManager.setStreamVolume(AudioManager.STREAM_VOICE_CALL, originalCallVolume, 0)
                 audioManager.mode = originalMode
@@ -104,6 +143,7 @@ object CallAudioSpeaker {
 
         // Initialize TextToSpeech
         tts = TextToSpeech(appContext) { initStatus ->
+            activeTts = tts
             if (initStatus != TextToSpeech.SUCCESS) {
                 Log.e(TAG, "TextToSpeech init failed. Ending call.")
                 mainHandler.removeCallbacks(safetyTimeoutRunnable)
@@ -184,10 +224,11 @@ object CallAudioSpeaker {
                 settings.spokeThisCall = true
 
                 // Schedule hangup based on estimated duration
-                mainHandler.postDelayed({
+                activeRunnable = Runnable {
                     mainHandler.removeCallbacks(safetyTimeoutRunnable)
                     finishCall()
-                }, estimatedSpeechDurationMs)
+                }
+                mainHandler.postDelayed(activeRunnable!!, estimatedSpeechDurationMs)
 
             } catch (e: Exception) {
                 Log.e(TAG, "Exception during TTS playback setup", e)

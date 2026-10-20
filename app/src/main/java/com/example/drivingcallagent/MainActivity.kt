@@ -147,6 +147,7 @@ fun DrivingAgentScreen(
     // -------------------------------------------------------------------------
     // Driving mode switch state
     var isDrivingMode by remember { mutableStateOf(settings.isDrivingModeEnabled) }
+    var isAutoAnswer by remember { mutableStateOf(settings.isAutoAnswerEnabled) }
 
     // Cloud Voice AI & Call Forwarding state
     var isCloudMode by remember { mutableStateOf(settings.isCloudForwardingMode) }
@@ -265,6 +266,41 @@ fun DrivingAgentScreen(
                             }
                         }
                     )
+                }
+
+                if (isDrivingMode) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Auto-Answer onto Speakerphone",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = "OFF = Auto-declines & sends 1-Tap Voice Bridge (Recommended)",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 11.sp
+                            )
+                        }
+                        Switch(
+                            checked = isAutoAnswer,
+                            onCheckedChange = { checked ->
+                                isAutoAnswer = checked
+                                settings.isAutoAnswerEnabled = checked
+                            }
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
                 }
             }
         }
