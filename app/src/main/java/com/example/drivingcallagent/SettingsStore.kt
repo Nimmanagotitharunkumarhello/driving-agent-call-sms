@@ -112,7 +112,7 @@ class SettingsStore(context: Context) {
     var autoSmsTemplate: String
         get() = prefs.getString(
             "auto_sms_template",
-            "Hi! I am Java, an AI agent for Tharun. Sir cannot answer right now because he is driving. To speak with me directly with your voice, tap this link: {LINK} or reply to this SMS with your urgent message."
+            "Hi! I am Java, Tharun's AI assistant. Tharun is driving and cannot answer calls right now. Please reply to this SMS with your message or emergency, and I will alert him immediately."
         ).orEmpty()
         set(value) = prefs.edit().putString("auto_sms_template", value.trim()).apply()
 

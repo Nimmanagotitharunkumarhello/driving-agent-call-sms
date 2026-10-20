@@ -149,23 +149,9 @@ fun DrivingAgentScreen(
     var isDrivingMode by remember { mutableStateOf(settings.isDrivingModeEnabled) }
     var isAutoAnswer by remember { mutableStateOf(settings.isAutoAnswerEnabled) }
 
-    // Cloud Voice AI & Call Forwarding state
-    var isCloudMode by remember { mutableStateOf(settings.isCloudForwardingMode) }
-    var cloudNumber by remember { mutableStateOf(settings.cloudAgentNumber) }
-    var isForwardingActive by remember { mutableStateOf(settings.isForwardingActive) }
-
     // Auto-SMS Fallback state
     var isAutoSmsEnabled by remember { mutableStateOf(settings.isAutoSmsFallbackEnabled) }
     var autoSmsTemplate by remember { mutableStateOf(settings.autoSmsTemplate) }
-    var voiceAgentWebUrl by remember { mutableStateOf(settings.voiceAgentWebUrl) }
-
-
-    // Helper to launch system dialer with GSM MMI forwarding code
-    val dialGsmCode = { code: String ->
-        val encodedCode = code.replace("#", "%23")
-        val dialIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$encodedCode"))
-        context.startActivity(dialIntent)
-    }
 
     // Telegram Bot credentials
     var botToken by remember { mutableStateOf(settings.botToken) }
@@ -305,7 +291,7 @@ fun DrivingAgentScreen(
             }
         }
 
-        // Cloud Voice Telephony & Carrier Forwarding Card
+        // Auto-SMS Assistant & Gemini AI Copilot Card
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -326,118 +312,12 @@ fun DrivingAgentScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Cloud Voice AI Agent",
+                                text = "Auto-SMS Assistant (Java)",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "Talks directly to caller with zero echo cancellation",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        Switch(
-                            checked = isCloudMode,
-                            onCheckedChange = { enabled ->
-                                isCloudMode = enabled
-                                settings.isCloudForwardingMode = enabled
-                            }
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    OutlinedTextField(
-                        value = cloudNumber,
-                        onValueChange = {
-                            cloudNumber = it
-                            settings.cloudAgentNumber = it
-                        },
-                        label = { Text("Cloud Agent Number (Twilio)") },
-                        placeholder = { Text("e.g. +12025550198") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // Forwarding Control Buttons
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Button(
-                            onClick = {
-                                if (cloudNumber.isBlank()) {
-                                    Toast.makeText(context, "Enter your Cloud Agent / Twilio number first!", Toast.LENGTH_SHORT).show()
-                                    return@Button
-                                }
-                                val code = "**61*$cloudNumber*11*05#"
-                                isForwardingActive = true
-                                settings.isForwardingActive = true
-                                dialGsmCode(code)
-                                Toast.makeText(context, "Opening dialer: Press Call to enable carrier forwarding", Toast.LENGTH_LONG).show()
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("Forward Calls", fontSize = 13.sp)
-                        }
-
-                        Button(
-                            onClick = {
-                                val cancelCode = "##61#"
-                                isForwardingActive = false
-                                settings.isForwardingActive = false
-                                dialGsmCode(cancelCode)
-                                Toast.makeText(context, "Opening dialer: Press Call to cancel forwarding", Toast.LENGTH_LONG).show()
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("Cancel Forwarding", fontSize = 13.sp)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = "• Forward code **61*<num>*11*05# rings for 5s then forwards to AI.\n• Cancel code ##61# restores direct ringing when you stop driving.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 11.sp
-                    )
-                }
-            }
-        }
-
-
-        // Auto-SMS Fallback & AI Intelligence Card
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Auto-SMS & AI Copilot",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "Texts caller if call fails; Gemini summarizes replies",
+                                text = "Declines calls while driving & texts caller automatically",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -463,28 +343,14 @@ fun DrivingAgentScreen(
                             },
                             label = { Text("Auto-SMS Text to Caller") },
                             modifier = Modifier.fillMaxWidth(),
-                            minLines = 2,
-                            maxLines = 4
-                        )
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        OutlinedTextField(
-                            value = voiceAgentWebUrl,
-                            onValueChange = {
-                                voiceAgentWebUrl = it
-                                settings.voiceAgentWebUrl = it
-                            },
-                            label = { Text("1-Tap Voice Bridge Web Link (Optional)") },
-                            placeholder = { Text("e.g. https://your-server.com/call") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
+                            minLines = 3,
+                            maxLines = 5
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text = "• When someone calls while you're driving, this SMS is sent automatically from your SIM.\n• If a Voice Bridge link is set, callers can tap it to speak directly with Java in real-time voice!\n• If they reply by SMS, Gemini analyzes urgency and alerts Telegram.",
+                            text = "• When someone calls while Driving Mode is ON, the call is declined and this text is sent instantly from your SIM.\n• When the caller replies, Google Gemini analyzes urgency and alerts your Telegram!",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 11.sp
