@@ -156,6 +156,7 @@ fun DrivingAgentScreen(
     // Auto-SMS Fallback state
     var isAutoSmsEnabled by remember { mutableStateOf(settings.isAutoSmsFallbackEnabled) }
     var autoSmsTemplate by remember { mutableStateOf(settings.autoSmsTemplate) }
+    var voiceAgentWebUrl by remember { mutableStateOf(settings.voiceAgentWebUrl) }
 
 
     // Helper to launch system dialer with GSM MMI forwarding code
@@ -430,10 +431,24 @@ fun DrivingAgentScreen(
                             maxLines = 4
                         )
 
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        OutlinedTextField(
+                            value = voiceAgentWebUrl,
+                            onValueChange = {
+                                voiceAgentWebUrl = it
+                                settings.voiceAgentWebUrl = it
+                            },
+                            label = { Text("1-Tap Voice Bridge Web Link (Optional)") },
+                            placeholder = { Text("e.g. https://your-server.com/call") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text = "• When someone calls and it rings out or fails, this text is sent instantly from your SIM.\n• When they reply, Gemini extracts urgency & alerts your Telegram!",
+                            text = "• When someone calls while you're driving, this SMS is sent automatically from your SIM.\n• If a Voice Bridge link is set, callers can tap it to speak directly with Java in real-time voice!\n• If they reply by SMS, Gemini analyzes urgency and alerts Telegram.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 11.sp

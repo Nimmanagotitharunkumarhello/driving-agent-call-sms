@@ -105,9 +105,16 @@ class SettingsStore(context: Context) {
     var autoSmsTemplate: String
         get() = prefs.getString(
             "auto_sms_template",
-            "Hi! I am Java, an AI agent for Tharun. Sir cannot attend the call right now because he is driving. When he finishes driving and parks safely, he will call you back. If you have any urgent queries or messages, please reply to this SMS and I will notify sir immediately."
+            "Hi! I am Java, an AI agent for Tharun. Sir cannot answer right now because he is driving. To speak with me directly with your voice, tap this link: {LINK} or reply to this SMS with your urgent message."
         ).orEmpty()
         set(value) = prefs.edit().putString("auto_sms_template", value.trim()).apply()
+
+    /**
+     * Web link for 1-Tap Voice Bridge where callers can speak directly to Java.
+     */
+    var voiceAgentWebUrl: String
+        get() = prefs.getString("voice_agent_web_url", "").orEmpty()
+        set(value) = prefs.edit().putString("voice_agent_web_url", value.trim()).apply()
 
 
     /**

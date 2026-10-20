@@ -1,9 +1,12 @@
+import os
 import logging
 import time
 from typing import Dict, Any, List
 from fastapi import FastAPI, Form, Request, Response, BackgroundTasks
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from twilio.twiml.voice_response import VoiceResponse, Gather
+from livekit.api import AccessToken, VideoGrants
 
 from config import settings
 from gemini_agent import gemini_agent
@@ -18,9 +21,38 @@ logger = logging.getLogger("VoiceServer")
 
 app = FastAPI(
     title="Driving Call Agent - Voice AI Server",
-    description="Twilio Voice + Gemini Conversational Agent + Telegram Alert System",
+    description="Twilio Voice + LiveKit WebRTC + Gemini Conversational Agent + Telegram Alert System",
     version="2.0.0"
 )
+
+# Static files for mobile WebRTC 1-Tap Voice Bridge
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+if os.path.exists(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+@app.get("/call", response_class=FileResponse)
+async def web_call_page():
+    """Serves the 1-Tap WebRTC voice call interface for mobile callers."""
+    index_file = os.path.join(static_dir, "index.html")
+    return FileResponse(index_file)
+
+@app.get("/api/token")
+async def generate_livekit_token(caller: str = "Caller"):
+    """Generates an authenticated JWT room token for callers to talk with Gemini Live."""
+    identity = f"{caller}_{int(time.time())}"
+    token = (
+        AccessToken(settings.LIVEKIT_API_KEY, settings.LIVEKIT_API_SECRET)
+        .with_identity(identity)
+        .with_name(caller)
+        .with_grants(VideoGrants(room_join=True, room="driving-agent-room"))
+        .to_jwt()
+    )
+    return {
+        "token": token,
+        "serverUrl": settings.LIVEKIT_URL,
+        "room": "driving-agent-room",
+        "identity": identity
+    }
 
 # In-memory call sessions: CallSid -> session state
 # { "from": "+1...", "history": [...], "start_time": 12345678, "notified": False }

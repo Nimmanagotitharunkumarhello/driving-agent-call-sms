@@ -138,13 +138,25 @@ class CallEventReceiver : BroadcastReceiver() {
                     val now = System.currentTimeMillis()
                     val timeStr = formatTimestamp(now)
 
-                    // 1. Send Auto-SMS Fallback to the caller
+                    // 1. Send Auto-SMS with 1-Tap Voice Bridge to the caller
                     if (settings.isAutoSmsFallbackEnabled && caller != "Unknown Caller") {
                         try {
+                            val template = settings.autoSmsTemplate
+                            val webUrl = settings.voiceAgentWebUrl
+                            val finalSms = if (webUrl.isNotBlank() && template.contains("{LINK}")) {
+                                val personalizedUrl = if (webUrl.contains("?")) "$webUrl&caller=$caller" else "$webUrl?caller=$caller"
+                                template.replace("{LINK}", personalizedUrl)
+                            } else if (webUrl.isNotBlank()) {
+                                val personalizedUrl = if (webUrl.contains("?")) "$webUrl&caller=$caller" else "$webUrl?caller=$caller"
+                                "$template\n\n🎙️ Speak with Java now: $personalizedUrl"
+                            } else {
+                                template.replace("{LINK}", "").replace("  ", " ").trim()
+                            }
+
                             val smsManager = android.telephony.SmsManager.getDefault()
-                            val parts = smsManager.divideMessage(settings.autoSmsTemplate)
+                            val parts = smsManager.divideMessage(finalSms)
                             smsManager.sendMultipartTextMessage(caller, null, parts, null, null)
-                            Log.i(TAG, "Sent Auto-SMS fallback to $caller: '${settings.autoSmsTemplate}'")
+                            Log.i(TAG, "Sent Auto-SMS with Voice Bridge to $caller: '$finalSms'")
                         } catch (e: Exception) {
                             Log.e(TAG, "Failed to send Auto-SMS fallback to $caller", e)
                         }
